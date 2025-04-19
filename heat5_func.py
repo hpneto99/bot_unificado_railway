@@ -23,7 +23,11 @@ def tirar_screenshot_heatmap(ativo_base="ETH", exchange="Binance", chat_id=None,
 
     tempo_total = time.time()
     options = uc.ChromeOptions()
-    options.headless = True
+options.add_argument("--headless=new")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--disable-gpu")
+options.add_argument("--window-size=1920,1080")
     options.add_argument("--window-size=1920,1080")
     driver = uc.Chrome(options=options)
     wait = WebDriverWait(driver, 15)
