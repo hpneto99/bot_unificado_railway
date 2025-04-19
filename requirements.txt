@@ -1,0 +1,4 @@
+python-telegram-bot==13.15
+undetected-chromedriver==3.5.4
+selenium==4.11.2
+Pillow==9.5.0
