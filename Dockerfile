@@ -1,21 +1,53 @@
-
 FROM python:3.10-slim
 
-# Instalar dependências do sistema
-RUN apt-get update && apt-get install -y wget gnupg unzip     && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -     && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'     && apt-get update && apt-get install -y google-chrome-stable     && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Variável de ambiente para rodar Chrome headless sem problemas
+ENV PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive
 
-# Instalar ChromeDriver compatível
-RUN CHROME_VERSION=$(google-chrome --version | sed 's/[^0-9.]//g' | cut -d. -f1) &&     wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$(wget -q -O - "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")/chromedriver_linux64.zip &&     unzip /tmp/chromedriver.zip -d /usr/local/bin &&     rm /tmp/chromedriver.zip
+# Instalar dependências do sistema
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    gnupg \
+    unzip \
+    xvfb \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libxss1 \
+    libasound2 \
+    libxshmfence1 \
+    fonts-liberation \
+    libappindicator3-1 \
+    libu2f-udev \
+    libvulkan1 \
+    xdg-utils \
+    --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+
+# Instalar Google Chrome
+RUN curl -sSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor > /usr/share/keyrings/google.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list && \
+    apt-get update && apt-get install -y google-chrome-stable && \
+    rm -rf /var/lib/apt/lists/*
+
+# Instalar ChromeDriver compatível com o Chrome
+RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+') && \
+    DRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION") && \
+    wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/$DRIVER_VERSION/chromedriver_linux64.zip" && \
+    unzip /tmp/chromedriver.zip -d /usr/local/bin/ && \
+    chmod +x /usr/local/bin/chromedriver && \
+    rm /tmp/chromedriver.zip
 
 # Criar diretório do app
 WORKDIR /app
 COPY . /app
 
-# Instalar dependências do Python
-RUN pip install --no-cache-dir -r requirements.txt
+# Instalar dependências Python
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
 # Porta padrão da Railway
 EXPOSE 8080
 
-# Executar o bot
+# Rodar o bot
 CMD ["python", "bot_unificado.py"]
